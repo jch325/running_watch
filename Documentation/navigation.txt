@@ -1,0 +1,105 @@
+Navigation Source File Documentation
+
+Routines:
+
+	- Class Initialization (init_nav())
+		This routine will initialize private class variables (typically setting to zero) to guarantee initial values.
+		It will do some basic error checking on the input array. It will store the array for use by the class.
+
+		- Hides class variables that need to be set/reset and any other class startup procedures
+		- Input: an array with route waypoints
+		- Output: an error code if input is invalid
+		- Precond: the input is an array of waypts
+		- Postcond: the class is ready to be used, variables are all initially defined
+
+		Test the routine by giving different inputs and viewing variable states upon return. Give arrays of different
+		lengths, empty arrays, and arrays with junk values.
+
+	- Array Validity Check (array_valid())
+		This routine will check that the input array into 'init_nav()' is valid, meaning that it has greater than two
+		values, and is not NULL. It will return a value depending on whether the input is valid or not.
+
+		- Hides the error-checking procedures
+		- Input: an array with route waypoints
+		- Output: an success/failure code depending on the input validity
+		- Precond: the input is an array of waypts
+		- Postcond: the array is determined to be valid or not
+
+		Test the routine with different input and viewing the returned code. Give arrays of different lengths, empty
+		arrays, and arrays with junk values. Check border cases
+
+	- Copy Array (copy_route()) - REMOVED
+		This routine copies an array of indeterminate size into another array. 
+
+		- Hides the memory allocation calls and use of pointers
+		- Input: an array with route waypoints
+		- Output: none
+		- Precond: the input is a valid array of route waypoints
+		- Postcond: the waypoints are stored in another location in memory accessible only by this class
+
+		Test the routine with different inputs (within limits of precondition) including arrays of different lengths
+		and arrays with junk values.
+
+	- Route Navigation (navigate_route())
+		This routine is the main routine of the class and runs the user route navigation between waypoints. It is 
+		called roughly every second to update the user about the next waypoint. It retrieves the latest GPS data, 
+		determines the distance and bearing to the next	waypoint, updates information on the display, and vibrates the
+		motors if necessary. 
+
+		- Hides the logic and function calls behind route navigation
+		- Input: none
+		- Output: status of route (in progress, complete)
+		- Precond: class variables initialized, valid GPS fix
+		- Postcond: run complete and stats saved, or user quit
+
+		Test the routine by running through different kinds of routes.
+
+	- Distance Update (update_distance())
+		This routine updates the total distance completed and distance remaining to the next waypoint based on the 
+		distance traveled since the last routine call. It also updates the previous location of the user with the 
+		current location.
+
+		- Hides the validity check for the new location data
+		- Input: none
+		- Output: none
+		- Precond: the current location has been updated and all variables used are valid
+		- Postcond: distance variables updated with new information if new information valid
+
+		Test the routine by feeding valid and invalid previous and current locations.
+
+	- Calculate Distance Between Waypoints (dist_between_waypts())
+		This routine calculates the equirectangular approximation of the distance between two (latitude, longitude)
+		waypoints in meters. This approximation should work for distances of at least 100 km.
+
+		- Hides the equations and type conversions
+		- Input: two waypoint structures
+		- Output: an integer distance between the waypoints in meters
+		- Precond: inputs are valid waypoints with valid latitudes/longitudes
+		- Postcond: output is a valid approximation of the distance between the inputs
+
+		Test routine using waypoint at different magnitudes of distances and comparing to a known answer.
+
+	- Determine If Near Waypoint (near_waypoint())
+		This routine indicates whether or not the user is within a certain distance of the next waypoint, but not at
+		the next waypoint.
+
+		- Hides the logic statements
+		- Input: the distance to the next waypoint
+		- Output: a boolean that indicates if near the next waypoint
+		- Precond: the input is a valid positive integer
+		- Postcond: the returned value is a boolean
+
+		Test the routine using different distances including invalid and border cases. 
+
+	- Determine If At Waypoint (at_waypoint())
+		This routine indicates whether or not the user is at the next waypoint. This means that the user is within a
+		smaller distance than being near the waypoint.
+
+		- Hides the logic statements
+		- Input: the distance to the next waypoint
+		- Output: a boolean that indicates if at the next waypoint
+		- Precond: the input is a valid positive integer
+		- Postcond: the returned value is a boolean
+
+		Test the routine using different distances including invalid and border cases. 
+
