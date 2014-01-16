@@ -290,6 +290,14 @@ void off_course_correction() {
 }
 
 /*
+ * This routine saves certain run statistics, like total distance and time, to the EEPROM
+ * for non-volatile storage.
+ */
+void eeprom_save_stats() {
+
+}
+
+/*
  * This is the main routine of the class and runs the user route navigation between 
  * waypoints. It is called roughly every second to update the user about the next
  * waypoint and keep track of the route state.
@@ -328,21 +336,30 @@ uint8_t navigate_route() {
 
 			// TODO: Update the display
 			
-			// TODO: Stop vibrating motors?
-			
+			// Stop vibrating motors?
+			vibrate_off();
+
 			// Save the current latitude and longitude
 			memcpy(prev_location, current_location, sizeof(waypoint));
 		}	// End if not end of route
+
 		else { 
 			// Vibrate motors
-			// Store statistics on first iteration
-			// Update the display with finishing message
+			vibrate_both();
+
+			// Store statistics on first iteration to EEPROM
+			eeprom_save_stats();
+
+			// TODO: Update the display with finishing message
 		}
+	}	// End if update_gps
+
+	// Only update the time if GPS data invalid
+	else {
+		elapsed_time++;
 	}
-	// Else
-		// Update the time of the run
-	
-	// Update display or just update the time
+
+	// TODO: Update display or just update the time
 }
 
 
