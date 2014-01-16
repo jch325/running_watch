@@ -103,3 +103,61 @@ Routines:
 
 		Test the routine using different distances including invalid and border cases. 
 
+	- Find Bearing To Waypoint (bearing_to_waypt())
+		This routine finds the bearing from one latitude/longitude location to another in degrees. The first argument 
+		is the starting location and the second is the destination.
+
+		- Hides the mathematical calculations
+		- Input: two waypoint structures
+		- Output: a bearing in degrees in range 0-360
+		- Precond: the inputs are valid waypoints with valid latitudes/longitudes
+		- Postcond: the output is a valid bearing from first argument to the second argument
+
+		Test the routine with different waypoints and output possibilities.
+
+	- Find Direction To Turn To Waypoint (direction_to_turn())
+		This routine finds the direction to turn for the user's heading to intersect the intended bearing.
+
+		- Hides the logic statements
+		- Input: user heading and waypoint bearing
+		- Output: a direction enum indicating error or direction to turn
+		- Precond: inputs are current
+		- Postcond: given output will take user to waypoint
+
+		Test the routine with different headings and bearings.
+
+	- Vibrate Motors To Indicate Turn Direction (vibrate_motors())
+		This routine vibrates the motors for user feedback based on the input arguments. It uses functions found in motor.h.
+
+		- Hides the control logic
+		- Input: a direction enum indicating error or direction to turn
+		- Output: none
+		- Precond: input is valid direction enum
+		- Postcond: motor(s) vibrate or stop vibrating
+
+		Test the routine using all valid and a couple invalid inputs.
+
+	- Tell User Direction Of Next Waypoint (indicate_turn_direction())
+		This routine finds the user's heading and the next waypoint's bearing, determines which direction to turn to
+		get on the bearing, and vibrates the motors to tell the user which direction to turn. Alleviates some of the
+		nested if statements in the navigate_route() function.
+
+		- Hides a few function calls and a logic statement
+		- Input: none
+		- Output: none
+		- Precond: none
+		- Postcond: motor(s) vibrate or stop vibrating
+
+		Test the routine during use. Check that if statement works.
+
+	- Alert User If Off Course (off_course_correction())
+		This routine alerts the user to the direction of the current waypoint if the user wanders off the bearing to
+		the current waypoint.
+
+		- Hides a few function calls and a logic statement
+		- Input: none
+		- Output: none
+		- Precond: user is neither near nor at the current waypoint
+		- Postcond: motor vibrates or stops vibrating
+
+	- 

@@ -31,10 +31,10 @@ typedef struct waypoint {
 
 // Classes, constant definitions, enums, type definitions
 enum direction {
-	STRAIGHT,
 	LEFT,
+	STRAIGHT,
 	RIGHT,
-	NONE
+	ERROR
 };
 
 static waypoint **route;	// array of waypoint structures defining a running route
@@ -97,17 +97,17 @@ boolean array_valid(waypoint *test_route) {
  */
 uint16_t dist_between_waypts(waypoint *first_waypt, waypoint *second_waypt) {
 	// Convert input latitudes/longitudes to radians
-	double longitude_difference = (second_waypt.longitude - first_waypt.longitude) 
+	double delta_longitude = (second_waypt.longitude - first_waypt.longitude) 
 		* (double) DEG_TO_RAD;
 
-	double latitude_difference = (second_waypt.latitude - first_waypt.latitude)
+	double delta_latitude = (second_waypt.latitude - first_waypt.latitude)
 		* (double) DEG_TO_RAD;
 
 	double latitude_average = ( (second_waypt.latitude + first_waypt.latitude) 
 		* (double) DEG_TO_RAD ) / 2.0;
 
-	double x_coord = longitude_difference * cos(latitude_average);
-	double y_coord = latitude_difference;
+	double x_coord = delta_longitude * cos(latitude_average);
+	double y_coord = delta_latitude;
 	
 	// Convert to integer as double precision not necessary
 	uint16_t distance = (uint16_t) ( sqrt((x * x) + (y * y)) * EARTH_RADIUS);
@@ -163,6 +163,133 @@ boolean at_waypoint(uint16_t distance) {
 }
 
 /*
+ * This routine finds the bearing from one latitude/longitude location to another in
+ * degrees. The first argument is the starting location and the second is the destination.
+ */
+int16_t bearing_to_waypt(waypoint *first_waypt, waypoint *second_waypt) {
+	double delta_longitude = (second_waypt.longitude - first_waypt.longitude) * DEG_TO_RAD;
+	double delta_y = sin(delta_longitude) * cos(second_waypt.latitude * DEG_TO_RAD);
+	
+	double first_lat = first_waypt.latitude * DEG_TO_RAD;
+	double second_lat = second_waypt.latitude * DEG_TO_RAD;
+	double delta_x = ( cos(first_lat) * sin(second_lat) ) - ( sin(first_lat) * 
+		cos(second_lat) * cos(delta_longitude) );
+
+	int16_t bearing = (int16_t) ( atan2( delta_y, delta_x ) * RAD_TO_DEG);
+
+	// Account for negative results
+	if (bearing > 0) {
+		return bearing;
+	}
+	else {
+		return 360 + bearing;
+	}
+}
+
+/*
+ * This routine finds the direction to turn for the user's heading to intersect the 
+ * intended bearing. 
+ */
+direction direction_to_turn(int16_t heading, int16_t bearing) {
+	// Check that inputs are in proper range [0-360]
+	if ( (heading < 0 || 360 < heading) || (bearing < 0 || 360 < bearing) ) {
+		return ERROR;
+	}
+
+ 	// Calculate the difference between inputs
+	int16_t diff = bearing - heading;
+	int16_t abs_diff = (diff < 0) ? -diff : diff;
+
+	// Only go left/right if difference large enough
+	if (MIN_DIFF < abs_diff) {
+		if (abs_diff <= 180) {
+			
+			// Go left if bearing less than heading and right otherwise
+			return (diff < 0) ? LEFT : RIGHT;
+		}
+
+		// Difference > 180 degrees, only go left/right if difference large enough
+		else if (bearing > heading) {
+			
+			if (MIN_DIFF < ( (heading + 360) - bearing)) {
+				return LEFT;
+			}
+		}
+		else if (bearing < heading) {
+			
+			if (MIN_DIFF < ( (bearing + 360) - heading)) {
+				return RIGHT;
+			}
+		}
+	}
+
+	// Go straight if difference small enough
+	return STRAIGHT;
+}
+
+/*
+ * This routine vibrates the motors for user feedback based on the input argument.
+ */
+void vibrate_motors(direction turn_direction) {
+	switch (turn_direction) {
+		case STRAIGHT:
+			vibrate_both();
+			break;
+		case LEFT:
+			vibrate_left();
+			break;
+		case RIGHT:
+			vibrate_right();
+			break;
+		case ERROR:
+			vibrate_off();
+			break;
+		case default:
+			vibrate_off();
+			break;
+	}
+}
+
+/*
+ * This routine finds the user's heading and the next waypoint's bearing, determines which
+ * direction to turn to get on the bearing, and vibrates the motors to tell the user which
+ * direction to turn.
+ */
+void indicate_turn_direction() {
+	// Vibrate motor in direction of next waypoint if it exists
+	if (current_waypt_num < num_waypts_in_route) {
+		
+		// Find bearing to the next waypoint and user heading
+		int16_t waypt_bearing = bearing_to_waypt(current_location, 
+			route[current_waypt_num + 1]);
+		int16_t user_heading = get_heading();
+
+		// Find the direction for user to turn
+		direction turn_direction = direction_to_turn(user_heading, waypt_bearing);
+		vibrate_motors(turn_direction);
+	}
+}
+
+/*
+ * This routine alerts the user to the direction of the current waypoint if the user
+ * wanders off the bearing to the current waypoint.
+ */
+void off_course_correction() {
+	// Find bearing to the next waypoint and user heading
+	int16_t waypt_bearing = bearing_to_waypt(current_location, 
+		route[current_waypt_num]);
+	int16_t user_heading = get_heading();
+
+	// Find the direction for user to turn
+	direction turn_direction = direction_to_turn(user_heading, waypt_bearing);
+
+	// Don't vibrate if not off course
+	if (turn_direction != STRAIGHT) {
+		vibrate_motors(turn_direction);
+	}
+}
+
+/*
  * This is the main routine of the class and runs the user route navigation between 
  * waypoints. It is called roughly every second to update the user about the next
  * waypoint and keep track of the route state.
@@ -181,57 +308,36 @@ uint8_t navigate_route() {
 			// Update the distance to next waypoint
 			current_location->latitude = get_latitude();
 			current_location->longitude = get_longitude();
-			
 			uint16_t distance_to_waypt = update_distance();
 				
-			
-			// Vibrate motors if near next waypt, at a turn, or off course
-			// Update waypoints if at the next waypoint
-			// If near next waypt
+			// If near next waypt, tell user direction to next waypt
 			if (near_waypoint(distance_to_waypt)) {
-				// Vibrate motor in direction of following waypoint
-				if (current_waypt_num < num_waypts_in_route) {
-					// Find bearing to the next waypoint
-					int16_t waypt_bearing = bearing_to_waypt(current_location, 
-						route[current_waypt_num]);
-
-					int16_t user_heading = get_heading();
-
-					// Find the direction for user to turn
-					direction turn_direction = direction_to_turn(user_heading, waypt_bearing);
-
-					indicate_turn_direction(turn_direction);
-				}
-				// If next waypoint does not exist (end of route)
-					// Do nothing
-				// Vibrate motors to indicate direction of waypoint
+				indicate_turn_direction();				
 			}
-			// If at the next waypt
+
+			// If at the next waypt, tell user direction to next waypt and increment waypt
 			else if (at_waypoint(distance_to_waypt)) {
-				// If route not finished
-					// Vibrate motor in direction of following waypoint
-					// Find direction of next waypoint (left, right, straight)
-					// Vibrate motors to indicate direction of waypoint
-					// Update waypoint index
-				// Else run complete
+				indicate_turn_direction();
+				current_waypt_num++;
 			}
-			// If off course
-			else if (off_course()) {
-				// Vibrate motor in direction of waypoint
-			}
-
-
-			// Update the display
 			
-			// Stop vibrating motors
+			// If user not close to intended bearing, tell user direction to the bearing
+			else {
+				off_course_correction();
+			}
+
+			// TODO: Update the display
+			
+			// TODO: Stop vibrating motors?
 			
 			// Save the current latitude and longitude
 			memcpy(prev_location, current_location, sizeof(waypoint));
-		}
-		// Else 
+		}	// End if not end of route
+		else { 
 			// Vibrate motors
 			// Store statistics on first iteration
 			// Update the display with finishing message
+		}
 	}
 	// Else
 		// Update the time of the run
