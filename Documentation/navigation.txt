@@ -160,4 +160,15 @@ Routines:
 		- Precond: user is neither near nor at the current waypoint
 		- Postcond: motor vibrates or stops vibrating
 
-	- 
+		Test the routine during use.
+		
+	- Save Run Statistics (eeprom_save_stats())
+		This routine saves certain run statistics, like total distance and time, to the EEPROM for non-volatile storage.
+
+		- Hides function calls and unit conversions
+		- Input: none
+		- Output: none
+		- Precond: EEPROM not being used
+		- Postcond: new values saved into EEPROM
+
+		Test the routine using different times and distances and viewing EEPROM values.

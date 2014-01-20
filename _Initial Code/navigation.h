@@ -19,12 +19,16 @@
 #define NOTIFY_DISTANCE 40 	// meters
 #define MIN_DIFF 30 		// degrees
 #define NULL 0
+#define EEPROM_TIME 0 	// Place in memory
+#define EEPROM_DIST 8	// Place in memory
+#define SEC_TO_HR 3600.0 	// seconds to hrs
+#define M_TO_KM 1000.0 		// meters to kilometers
 
 
-enum boolean {
+typedef enum boolean {
 	TRUE = 1,
 	FALSE = (!TRUE)
-};
+} boolean;
 
 
 

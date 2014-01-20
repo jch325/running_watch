@@ -30,12 +30,12 @@ typedef struct waypoint {
 } waypoint;
 
 // Classes, constant definitions, enums, type definitions
-enum direction {
+typedef enum direction {
 	LEFT,
 	STRAIGHT,
 	RIGHT,
 	ERROR
-};
+} direction;
 
 static waypoint **route;	// array of waypoint structures defining a running route
 static uint8_t num_waypts_in_route;	// number of waypoints in the route
@@ -45,24 +45,57 @@ static waypoint *current_location;	// the current user location
 static waypoint *prev_location;		// the last known user location
 
 static uint16_t total_distance_run;
+
+/********************************************************/
+//REMOVE THIS CODE AFTER TEST
+waypoint** get_route() {
+	return route;
+}
+
+uint8_t get_num_waypts() {
+	return num_waypts_in_route;
+}
+
+uint8_t get_current_waypt() {
+	return current_waypt_num;
+}
+
+uint32_t get_elapsed_time() {
+	return elapsed_time;
+}
+
+waypoint* get_current_location() {
+	return current_location;
+}
+
+waypoint* get_previous_location() {
+	return prev_location;
+}
+
+uint16_t get_total_distance() {
+	return total_distance_run;
+}
+/********************************************************/
+
 /*
  * This routine initializes private class variables and stores the input array in a class
  * variable. It performs basic error checking on the input and returns a value indicating 
  * success or failure.
  */
-boolean init_nav(waypoint *new_route) {
+boolean init_nav(waypoint **new_route, uint8_t route_length) {
 	// Check that input is valid
-	if (array_valid(new_route)) {
+	// TODO: put maximum size on array? (put check elsewhere?)
+	if (array_valid(new_route, route_length)) {
 		// Save input into private array
-		memcpy(route, new_route, sizeof(new_route));
+		memcpy(&route, &new_route, sizeof(new_route));
 		
-		// TODO: Initialize private class variables
-		num_waypts_in_route = ARRAY_LENGTH(route);
+		// Initialize private class variables
+		num_waypts_in_route = route_length;
 		current_waypt_num = 0;
 		elapsed_time = 0;
 		total_distance_run = 0;
 
-		current_location = (waypoint *) malloc(sizeof(waypoint));
+		current_location = (wyapoint *) malloc(sizeof(waypoint));
 		prev_location = (waypoint *) malloc(sizeof(waypoint));
 
 		// Return success
@@ -77,14 +110,15 @@ boolean init_nav(waypoint *new_route) {
  * This routine checks that the input array has more than two values, and is not NULL.
  * Returns a value indicating valid or not.
  */
-boolean array_valid(waypoint *test_route) {
+boolean array_valid(waypoint **test_route, uint8_t route_length) {
 	// Check if array not NULL
 	if (test_route != NULL) {
 		
-		// Check if array has more than two values
-		if (ARRAY_LENGTH(test_route) > 2) {
-			return TRUE;
+		// Check that array has more than two values
+		if (route_length > 2) {
+			return TRUE;	
 		}
+		
 	}
 	
 	return FALSE;
@@ -294,7 +328,18 @@ void off_course_correction() {
  * for non-volatile storage.
  */
 void eeprom_save_stats() {
-
+	// Read saved accumulated run time
+	double accumulated_time = eeprom_read_float( (float *) EEPROM_TIME);
+	// Convert current run time from seconds to hours and add to accumulated run time
+	accumulated_time += ( ((double) elapsed_time) / SEC_TO_HR);
+	// Save updated accumulated run time to EEPROM
+	eeprom_write_float( (float *) EEPROM_TIME, accumulated_time);
+	// Read saved accumulated run distance 
+	double accumulated_dist = eeprom_read_float( (float *) EEPROM_DIST);
+	// Convert current run distance from meters to km and add to accumulated run distance
+	accumulated_dist += ( ((double) total_distance_run) / M_TO_KM);
+	// Save updated accumulated run distance to EEPROM
+	eeprom_write_float( (float *) EEPROM_DIST, accumulated_dist);
 }
 
 /*
