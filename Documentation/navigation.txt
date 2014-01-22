@@ -28,18 +28,6 @@ Routines:
 		Test the routine with different input and viewing the returned code. Give arrays of different lengths, empty
 		arrays, and arrays with junk values. Check border cases
 
-	- Copy Array (copy_route()) - REMOVED
-		This routine copies an array of indeterminate size into another array. 
-
-		- Hides the memory allocation calls and use of pointers
-		- Input: an array with route waypoints
-		- Output: none
-		- Precond: the input is a valid array of route waypoints
-		- Postcond: the waypoints are stored in another location in memory accessible only by this class
-
-		Test the routine with different inputs (within limits of precondition) including arrays of different lengths
-		and arrays with junk values.
-
 	- Route Navigation (navigate_route())
 		This routine is the main routine of the class and runs the user route navigation between waypoints. It is 
 		called roughly every second to update the user about the next waypoint. It retrieves the latest GPS data, 

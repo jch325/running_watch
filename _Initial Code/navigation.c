@@ -175,7 +175,7 @@ uint16_t update_distance() {
  * waypoint, but not at the waypoint.
  */
 boolean near_waypoint(uint16_t distance) {
-	if (distance <= (uint16_t) NOTIFY_DISTANCE) {
+	if ((uint16_t) NOTIFY_DISTANCE >= distance) {
 		if (distance > (uint16_t) CHANGE_DISTANCE) {
 			return TRUE;
 		}
