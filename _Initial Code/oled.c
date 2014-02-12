@@ -226,3 +226,7 @@ void oled_init() {
 	oled_send_command(OLED_NORMAL_DISPLAY);
 	oled_send_command(OLED_DISPLAY_ON);
 }
+
+/* Draw a vertical line */
+
+/* Draw a horizontal line */

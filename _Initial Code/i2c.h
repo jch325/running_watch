@@ -9,6 +9,9 @@
  * Only for use as a Master Transmitter.
  */
 
+#ifndef I2C_H_
+#define I2C_H_
+
 #define START 0x08		// START sent flag
 #define SLAW_ACK 0x18	// SLA+W ACK received flag
 #define SLAW_NACK 0x20		// SLA+W NACK received flag
@@ -28,3 +31,5 @@ void i2c_init(void);
 boolean i2c_start(uint8_t);
 boolean i2c_write(uint8_t);
 void i2c_stop(void);
+
+#endif // I2C_H_

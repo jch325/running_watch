@@ -9,6 +9,9 @@
  * 
  */
 
+#ifndef OLED_H_
+#define OLED_H_
+
 #define OLED_HEIGHT 64	// Display height in pixels
 #define OLED_WIDTH 128	// Display width in pixels
 #define OLED_I2C_ADDRESS 0x7A	// b01111010
@@ -88,3 +91,5 @@ void oled_set_pixel(coordinate, coordinate, color);
 void oled_send_display(void);
 void oled_init(void);
 void oled_clear_display_buffer(void);
+
+#endif // OLED_H_
