@@ -12,6 +12,7 @@
 #ifndef OLED_H_
 #define OLED_H_
 
+#define BYTE_LENGTH 8	// Number of bits in a byte
 #define OLED_HEIGHT 64	// Display height in pixels
 #define OLED_WIDTH 128	// Display width in pixels
 #define OLED_I2C_ADDRESS 0x7A	// b01111010
@@ -87,9 +88,21 @@ typedef enum color {
 	WHITE
 } color;
 
+typedef enum font_size {
+	SMALL = 1,
+	MEDIUM = 2,
+	LARGE = 4
+} font_size;
+
 void oled_set_pixel(coordinate, coordinate, color);
 void oled_send_display(void);
 void oled_init(void);
 void oled_clear_display_buffer(void);
+void oled_draw_vline(coordinate, coordinate, coordinate);
+void oled_draw_hline(coordinate, coordinate, coordinate);
+void oled_draw_rect(coordinate, coordinate, coordinate, coordinate);
+void oled_fill_rect(coordinate, coordinate, coordinate, coordinate);
+void oled_draw_bitmap(const uint8_t *, coordinate, coordinate, coordinate, coordinate);
+void oled_draw_char(unsigned char, coordinate, coordinate, font_size);
 
 #endif // OLED_H_

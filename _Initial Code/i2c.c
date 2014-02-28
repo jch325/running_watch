@@ -61,7 +61,7 @@ boolean i2c_start(uint8_t address) {
 	if (ack_received(START)) {
 		
 		// Add WRITE bit to address (make LSB zero)
-		address &= ~(1 << 1); 
+		address &= ~(1 << 0); 
 
 		// Load address into data register
 		TWDR = address;

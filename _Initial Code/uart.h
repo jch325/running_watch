@@ -15,6 +15,7 @@
 #ifndef UART_H_
 #define UART_H_
 
+#define F_CPU 16000000
 #define UART_BAUD 9600
 #define BAUD_PRESCALE (((F_CPU / (UART_BAUD * 16UL))) - 1)
 

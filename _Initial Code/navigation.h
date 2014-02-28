@@ -50,27 +50,27 @@ typedef enum direction {
 //REMOVE THIS CODE AFTER TEST
 waypoint** get_route(void);
 
-unsigned char get_num_waypts(void);
+uint8_t get_num_waypts(void);
 
-unsigned char get_current_waypt(void);
+uint8_t get_current_waypt(void);
 
-unsigned long get_elapsed_time(void);
+uint32_t get_elapsed_time(void);
 
 waypoint* get_current_location(void);
 
 waypoint* get_previous_location(void);
 
-unsigned int get_total_distance(void);
+uint16_t get_total_distance(void);
 /********************************************************/
 
-boolean array_valid(waypoint**, unsigned char);
-boolean init_nav(waypoint**, unsigned char);
-unsigned int dist_between_waypts(waypoint*, waypoint*);
-unsigned int update_distance(void);
-boolean near_waypoint(unsigned int);
-boolean at_waypoint(unsigned int);
-int bearing_to_waypt(waypoint*, waypoint*);
-direction direction_to_turn(int, int);
+boolean array_valid(waypoint**, uint8_t);
+boolean init_nav(waypoint**, uint8_t);
+uint16_t dist_between_waypts(waypoint*, waypoint*);
+uint16_t update_distance(void);
+boolean near_waypoint(uint16_t);
+boolean at_waypoint(uint16_t);
+int16_t bearing_to_waypt(waypoint*, waypoint*);
+direction direction_to_turn(int16_t, int16_t);
 //void vibrate_motors(direction);
 //void indicate_turn_direction(void);
 //void off_course_correction(void);

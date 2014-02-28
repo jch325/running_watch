@@ -10,12 +10,15 @@
  */
 
 #include <avr/io.h>
+#include <avr/pgmspace.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <util/delay.h>
+#include "ascii_font.c"
 #include "i2c.h"
 #include "oled.h"
+
 
 // Buffer to hold color (black or white) of each pixel in display
 //static uint8_t display_buffer[DISPLAY_BUFFER_SIZE] = {0x00};
@@ -99,7 +102,7 @@ static uint8_t display_buffer[DISPLAY_BUFFER_SIZE] = {
 /* Returns the byte in the buffer containing the desired pixel */
 static uint16_t get_buffer_index(coordinate x_coord, coordinate y_coord) {
 	uint16_t index = x_coord;
-	index += (y_coord / 8) * OLED_WIDTH;
+	index += (y_coord / BYTE_LENGTH) * OLED_WIDTH;
 
 	return index;
 }
@@ -135,10 +138,10 @@ void oled_set_pixel(coordinate x_coord, coordinate y_coord, color pixel_color) {
 
 	// Set pixel color in display buffer
 	if (pixel_color == WHITE) {
-		display_buffer[buffer_index] |= (1 << (modulus(y_coord, 8)) );
+		display_buffer[buffer_index] |= (1 << (modulus(y_coord, BYTE_LENGTH)) );
 	}
 	else {
-		display_buffer[buffer_index] &= ~(1 << (modulus(y_coord, 8)) );
+		display_buffer[buffer_index] &= ~(1 << (modulus(y_coord, BYTE_LENGTH)) );
 	}
 }
 
@@ -228,5 +231,169 @@ void oled_init() {
 }
 
 /* Draw a vertical line */
+void oled_draw_vline(coordinate x_coord, coordinate y1_coord, coordinate y2_coord) {
+	// Out of display bounds checks
+	if (OLED_WIDTH <= x_coord) {
+		return;
+	}
+	if ( (OLED_HEIGHT <= y1_coord) && (OLED_HEIGHT <= y2_coord)) {
+		return;
+	}
+
+	coordinate current_y = y1_coord;
+	coordinate end_y = y2_coord;
+	if (y2_coord < y1_coord) {
+		current_y = y2_coord;
+		end_y = y1_coord;
+	}
+	
+	// Cut off line if it runs out of display area 
+	if (OLED_HEIGHT <= end_y) {
+		end_y = OLED_HEIGHT - 1;
+	}
+
+	// Draw the line pixel by pixel
+	while (current_y <= end_y) {
+		oled_set_pixel(x_coord, current_y, WHITE);
+		current_y++;
+	}
+}
 
 /* Draw a horizontal line */
+void oled_draw_hline(coordinate y_coord, coordinate x1_coord, coordinate x2_coord) {
+	// Out of display bounds checks
+	if (OLED_HEIGHT <= y_coord) {
+		return;
+	}
+	if ( (OLED_WIDTH <= x1_coord) && (OLED_WIDTH <= x2_coord) ) {
+		return;
+	}
+
+	coordinate current_x = x1_coord;
+	coordinate end_x = x2_coord;
+	if (x2_coord < x1_coord) {
+		current_x = x2_coord;
+		end_x = x1_coord;
+	}
+
+	// Cut off line if it runs out of display area
+	if (OLED_WIDTH <= end_x) {
+		end_x = OLED_WIDTH - 1;
+	}
+	
+	// Draw the line pixel by pixel
+	while (current_x <= end_x) {
+		oled_set_pixel(current_x, y_coord, WHITE);
+		current_x++;
+	}
+}
+
+/* Draw a rectangle outline */
+void oled_draw_rect(coordinate x_left, coordinate y_top, coordinate width, 
+					coordinate height) {
+
+	// Determine coordinates for bottom right corner of rectangle
+	coordinate x_right = x_left + width - 1;
+	coordinate y_bottom = y_top + height - 1;
+
+	oled_draw_hline(y_top, x_left, x_right);
+	oled_draw_hline(y_bottom, x_left, x_right);
+	oled_draw_vline(x_left, y_top, y_bottom);
+	oled_draw_vline(x_right, y_top, y_bottom);
+}
+
+/* Fill a rectangle */
+void oled_fill_rect(coordinate x_left, coordinate y_top, coordinate width,
+					coordinate height) {
+	
+	// Determine coordinates for bottom right corner of rectangle
+	coordinate x_right = x_left + width - 1;
+	coordinate y_bottom = y_top + height - 1;
+
+	// Run loop to draw lines over shorter of width and height
+	if (width <= height) {
+		coordinate current_x = x_left;
+		while (current_x <= x_right) {
+			oled_draw_vline(current_x, y_top, y_bottom);
+			current_x++;
+		}
+	}
+	else {
+		coordinate current_y = y_top;
+		while (current_y <= y_bottom) {
+			oled_draw_vline(current_y, x_left, x_right);
+			current_y++;
+		}
+	}
+}
+
+/*
+ Bitmap format
+ - At least as many bytes as the width
+ - More bytes if height more than 8
+ - Bytes ordered from top left, left to right, then top to bottom
+ */
+/* Draw a bitmap image (using the display data format) */
+void oled_draw_bitmap(const uint8_t *bitmap, coordinate x_left, coordinate y_top, 
+					  coordinate width, coordinate height) {
+	
+	// Height of bitmap in bytes (rounded up)
+	uint8_t byte_height = ( (height - 1) / BYTE_LENGTH) + 1;
+
+	// Iterate over each "row of 8 bits" in bitmap
+	for (uint8_t byte_row = 0; byte_row < byte_height; byte_row++) {
+		
+		// Iterate over each column
+		for (uint8_t column = 0; column < width; column++) {
+			
+			// Retrieve the corresponding byte
+			uint8_t bitmap_byte = bitmap + column + (byte_row * width);
+			uint8_t bitmap_data = pgm_read_byte(bitmap_byte);
+
+			// Set the pixel for each of the 8 bits in the column
+			for (uint8_t row = 0; row < BYTE_LENGTH; row++) {
+				
+				if (bitmap_data & (1 << row)) {
+					coordinate x_coord = x_left + column;
+					coordinate y_coord = y_top + row + (byte_row * BYTE_LENGTH);
+					oled_set_pixel(x_coord, y_coord, WHITE);
+				}
+			}
+		}
+	}	
+}
+
+/* Draw a single ASCII character */
+void oled_draw_char(unsigned char c, coordinate x_left, coordinate y_top, font_size size) {
+	uint8_t bytes_in_font = 5;
+	
+	// Loop through each byte in the character mapping (5)
+	for (uint8_t char_column = 0; char_column < bytes_in_font; char_column++) {
+		uint16_t byte_address = font + ((c - 32) * bytes_in_font) + char_column;
+
+		// Retrieve character mapping from memory
+		uint8_t char_data = pgm_read_byte(byte_address);
+
+		// Loop through each bit in the byte
+		for (uint8_t char_row = 0; char_row < BYTE_LENGTH; char_row++) {
+
+			if (char_data & (1 << char_row)) {
+				
+				// Fill a pixel if the size is SMALL
+				if (size == SMALL) {
+					coordinate x_coord = x_left + char_column;
+					coordinate y_coord = y_top + char_row;
+					oled_set_pixel(x_coord, y_coord, WHITE);
+				}
+
+				// Fill a rectangle if size is MEDIUM or LARGE
+				else {
+					coordinate x_coord = x_left + (char_column * size);
+					coordinate y_coord = y_top + (char_row * size);
+					oled_fill_rect(x_coord, y_coord, size, size);
+				}
+			}	
+		}
+	}
+}
+

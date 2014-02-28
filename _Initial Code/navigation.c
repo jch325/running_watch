@@ -28,13 +28,13 @@
 // Private variables and functions to file
 
 static waypoint **route;	// array of waypoint structures defining a running route
-static unsigned char num_waypts_in_route;	// number of waypoints in the route
-static unsigned char current_waypt_num;	// index in route of the next waypoint
-static unsigned long elapsed_time;		// seconds since beginning of run
+static uint8_t num_waypts_in_route;	// number of waypoints in the route
+static uint8_t current_waypt_num;	// index in route of the next waypoint
+static uint32_t elapsed_time;		// seconds since beginning of run
 static waypoint *current_location;	// the current user location
 static waypoint *prev_location;		// the last known user location
 
-static unsigned int total_distance_run;
+static uint16_t total_distance_run;
 
 /********************************************************/
 //REMOVE THIS CODE AFTER TEST
@@ -42,15 +42,15 @@ static unsigned int total_distance_run;
 	return route;
 }
 
-unsigned char get_num_waypts() {
+uint8_t get_num_waypts() {
 	return num_waypts_in_route;
 }
 
-unsigned char get_current_waypt() {
+uint8_t get_current_waypt() {
 	return current_waypt_num;
 }
 
-unsigned long get_elapsed_time() {
+uint32_t get_elapsed_time() {
 	return elapsed_time;
 }
 
@@ -62,7 +62,7 @@ waypoint* get_previous_location() {
 	return prev_location;
 }
 
-unsigned int get_total_distance() {
+uint16_t get_total_distance() {
 	return total_distance_run;
 }*/
 /********************************************************/
@@ -71,7 +71,7 @@ unsigned int get_total_distance() {
  * This routine checks that the input array has more than two values, and is not NULL.
  * Returns a value indicating valid or not.
  */
-boolean array_valid(waypoint **test_route, unsigned char route_length) {
+boolean array_valid(waypoint **test_route, uint8_t route_length) {
 	// Check if array not NULL
 	if (test_route != NULL) {
 
@@ -90,7 +90,7 @@ boolean array_valid(waypoint **test_route, unsigned char route_length) {
  * variable. It performs basic error checking on the input and returns a value indicating 
  * success or failure.
  */
-boolean init_nav(waypoint **new_route, unsigned char route_length) {
+boolean init_nav(waypoint **new_route, uint8_t route_length) {
 	// Check that input is valid
 	// TODO: put maximum size on array? (put check elsewhere?)
 	if (array_valid(new_route, route_length)) {
@@ -121,7 +121,7 @@ boolean init_nav(waypoint **new_route, unsigned char route_length) {
  * (latitude, longitude) waypoints in meters. This approximation should work for 
  * distances of at least 100 km.
  */
-unsigned int dist_between_waypts(waypoint *first_waypt, waypoint *second_waypt) {
+uint16_t dist_between_waypts(waypoint *first_waypt, waypoint *second_waypt) {
 	// Convert input latitudes/longitudes to radians
 	double delta_longitude = (second_waypt->longitude - first_waypt->longitude)
 		* (double) DEG_TO_RAD;
@@ -136,7 +136,7 @@ unsigned int dist_between_waypts(waypoint *first_waypt, waypoint *second_waypt) 
 	double y_coord = delta_latitude;
 	
 	// Convert to integer as double precision not necessary
-	unsigned int distance = (unsigned int) ( sqrt((x_coord * x_coord) + (y_coord * y_coord)) * EARTH_RADIUS);
+	uint16_t distance = (uint16_t) ( sqrt((x_coord * x_coord) + (y_coord * y_coord)) * EARTH_RADIUS);
 
 	return distance;
 }
@@ -146,8 +146,8 @@ unsigned int dist_between_waypts(waypoint *first_waypt, waypoint *second_waypt) 
  * waypoint based on the distance traveled since the last routine call. It also updates
  * the previous location of the user with the current location.
  */
-unsigned int update_distance() {
-	unsigned int distance_covered = dist_between_waypts(prev_location, current_location);
+uint16_t update_distance() {
+	uint16_t distance_covered = dist_between_waypts(prev_location, current_location);
 	
 	// If the distance traveled in the last second is reasonable
 	if (distance_covered <= REASONABLE_DISTANCE) {
@@ -167,9 +167,9 @@ unsigned int update_distance() {
  * This routine indicates whether or not the user is within a certain distance of the next
  * waypoint, but not at the waypoint.
  */
-boolean near_waypoint(unsigned int distance) {
-	if (distance <= (unsigned int) NOTIFY_DISTANCE) {
-		if ((unsigned int) CHANGE_DISTANCE < distance) {
+boolean near_waypoint(uint16_t distance) {
+	if (distance <= (uint16_t) NOTIFY_DISTANCE) {
+		if ((uint16_t) CHANGE_DISTANCE < distance) {
 			return TRUE;
 		}
 	}
@@ -181,8 +181,8 @@ boolean near_waypoint(unsigned int distance) {
  * This routine indicates whether or not the user is at the next waypoint. This means
  * that the user is within a smaller distance than being near the waypoint.
  */
-boolean at_waypoint(unsigned int distance) {
-	if (distance <= (unsigned int) CHANGE_DISTANCE) {
+boolean at_waypoint(uint16_t distance) {
+	if (distance <= (uint16_t) CHANGE_DISTANCE) {
 		return TRUE;
 	}
 
@@ -193,7 +193,7 @@ boolean at_waypoint(unsigned int distance) {
  * This routine finds the bearing from one latitude/longitude location to another in
  * degrees. The first argument is the starting location and the second is the destination.
  */
-int bearing_to_waypt(waypoint *first_waypt, waypoint *second_waypt) {
+int16_t bearing_to_waypt(waypoint *first_waypt, waypoint *second_waypt) {
 	double delta_longitude = (second_waypt->longitude - first_waypt->longitude) * DEG_TO_RAD;
 	double delta_y = sin(delta_longitude) * cos(second_waypt->latitude * DEG_TO_RAD);
 	
@@ -202,7 +202,7 @@ int bearing_to_waypt(waypoint *first_waypt, waypoint *second_waypt) {
 	double delta_x = ( cos(first_lat) * sin(second_lat) ) - ( sin(first_lat) * 
 		cos(second_lat) * cos(delta_longitude) );
 
-	int bearing = (int) ( atan2( delta_y, delta_x ) * RAD_TO_DEG);
+	int16_t bearing = (int16_t) ( atan2( delta_y, delta_x ) * RAD_TO_DEG);
 
 	// Account for negative results
 	if (bearing >= 0) {
@@ -217,15 +217,15 @@ int bearing_to_waypt(waypoint *first_waypt, waypoint *second_waypt) {
  * This routine finds the direction to turn for the user's heading to intersect the 
  * intended bearing. 
  */
-direction direction_to_turn(int heading, int bearing) {
+direction direction_to_turn(int16_t heading, int16_t bearing) {
 	// Check that inputs are in proper range [0-360]
 	if ( (heading < 0 || 360 < heading) || (bearing < 0 || 360 < bearing) ) {
 		return ERROR;
 	}
 
  	// Calculate the difference between inputs
-	int diff = bearing - heading;
-	int abs_diff = (diff < 0) ? -diff : diff;
+	int16_t diff = bearing - heading;
+	int16_t abs_diff = (diff < 0) ? -diff : diff;
 
 	// Only go left/right if difference large enough
 	if (MIN_DIFF < abs_diff) {
@@ -287,9 +287,9 @@ void indicate_turn_direction() {
 	if (current_waypt_num < num_waypts_in_route) {
 		
 		// Find bearing to the next waypoint and user heading
-		int waypt_bearing = bearing_to_waypt(current_location,
+		int16_t waypt_bearing = bearing_to_waypt(current_location,
 			route[current_waypt_num + 1]);
-		int user_heading = get_heading();
+		int16_t user_heading = get_heading();
 
 		// Find the direction for user to turn
 		direction turn_direction = direction_to_turn(user_heading, waypt_bearing);
@@ -303,9 +303,9 @@ void indicate_turn_direction() {
  */
 void off_course_correction() {
 	// Find bearing to the next waypoint and user heading
-	int waypt_bearing = bearing_to_waypt(current_location,
+	int16_t waypt_bearing = bearing_to_waypt(current_location,
 		route[current_waypt_num]);
-	int user_heading = get_heading();
+	int16_t user_heading = get_heading();
 
 	// Find the direction for user to turn
 	direction turn_direction = direction_to_turn(user_heading, waypt_bearing);
@@ -340,7 +340,7 @@ void eeprom_save_stats() {
  * waypoints. It is called roughly every second to update the user about the next
  * waypoint and keep track of the route state.
  */
-unsigned char navigate_route() {
+uint8_t navigate_route() {
 	// Retrieve latest GPS data
 	// If data valid
 	if (update_gps()) {
@@ -354,7 +354,7 @@ unsigned char navigate_route() {
 			// Update the distance to next waypoint
 			current_location->latitude = get_latitude();
 			current_location->longitude = get_longitude();
-			unsigned int distance_to_waypt = update_distance();
+			uint16_t distance_to_waypt = update_distance();
 				
 			// If near next waypt, tell user direction to next waypt
 			if (near_waypoint(distance_to_waypt)) {

@@ -28,9 +28,9 @@ static char* send_buffer;
 /*
  *
  */
-ISR(USART_RX_vect) {
+ISR(USART1_RX_vect) {
 	char c;
-	c = UDR;
+	c = UDR1;
 
 	uart_data_rx(c);
 }
@@ -38,14 +38,14 @@ ISR(USART_RX_vect) {
 /*
  *
  */
-ISR(USART_UDRE_vect) {
+ISR(USART1_UDRE_vect) {
 	if (buffer_size > send_index) {
-		UDR = send_buffer[send_index];
+		UDR1 = send_buffer[send_index];
 		send_index++;
 	} else {
 		buffer_size = 0;
 		// Check variable names**************
-		UCSR1B &= ~(1 << UDRIE);
+		UCSR1B &= ~(1 << UDRIE1);
 	}
 }
 
@@ -57,7 +57,7 @@ void uart_init(){
 	buffer_size = 0;
 
 	// Turn on the UART RX and TX
-	UCSR1B |= (1 << RXEN) | (1 << TXEN);
+	UCSR1B |= (1 << RXEN1) | (1 << TXEN1);
 	// Use 8-bit char size, no parity, one stop bit (8N1)
 	UCSR1C |= (1 << UCSZ10) | (1 << UCSZ11);
 
@@ -67,9 +67,9 @@ void uart_init(){
 	UBRR1L = BAUD_PRESCALE;
 
 	// Enable the USART Recieve Complete interrupt (USART_RXC)
-	UCSR1B |= (1 << RXCIE);
+	UCSR1B |= (1 << RXCIE1);
 	// Disable sending
-	UCSR1B &= ~(1 << UDRIE);
+	UCSR1B &= ~(1 << UDRIE1);
 }
 
 /*
@@ -84,7 +84,7 @@ uint8_t uart_send(char* buffer, uint8_t size){
 		send_index = 0;
 		send_buffer = buffer;
 		// Enable UART interrupt (Data Register Empty Interrupt will execute)
-		UCSR1B |= (1 << UDRIE);
+		UCSR1B |= (1 << UDRIE1);
 
 		return 0;
 	}
